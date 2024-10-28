@@ -2,12 +2,13 @@
 
 #include "byte_stream.hh"
 #include <vector>
-//#include <set>
+#include <set>
 class Reassembler
 {
 public:
   // Construct Reassembler to write into given ByteStream.
-  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ),first_unassembled_index_(0),unacceptable_index_(0),bytes_pending_num_(0),last_byte_index_(-1),unordered_bytes_(output_.capacity_,'\0'),unordered_bytes_flag_(output_.capacity_,false) {}
+  explicit Reassembler( ByteStream&& output ) :  output_(std::move(output)), first_unassembled_index_(0),
+        last_byte_index_(-2), bytes_pending_num_(0),intervals_(){}
 
   /*
    * Insert a new substring to be reassembled into a ByteStream.
@@ -42,67 +43,24 @@ public:
   const Writer& writer() const { return output_.writer(); }
 
 private:
-  void push_bytes( uint64_t first_index, std::string data ,bool is_last_substring);
-  void cache_bytes( uint64_t first_index, std::string data);
-  void flush_buffer(); 
-  ByteStream output_; // the Reassembler writes to this ByteStream
+   struct Interval {
+    uint64_t start;
+    uint64_t end;
+    std::string data;
+
+    bool operator<(const Interval& other) const {
+      return start < other.start;
+    }
+  };
+
+  // 合并并写入区间的帮助函数
+  void write_and_merge(Interval new_interval);
+
+  ByteStream output_;
   uint64_t first_unassembled_index_;
-  uint64_t unacceptable_index_;
-  uint64_t bytes_pending_num_;
   int last_byte_index_;
-  std::string unordered_bytes_ ;
-  std::vector<bool> unordered_bytes_flag_;
+  uint64_t bytes_pending_num_;
+  std::set<Interval> intervals_;
 
 };
-
-// class IntervalSet {
-// public:
-//     using Interval = std::pair<int, int>;
-
-//     // 插入区间
-//     void insert(const Interval& newInterval) {
-//         auto it = intervals.lower_bound(newInterval);
-        
-//         // 查找所有与 newInterval 有可能重叠的区间
-//         int start = newInterval.first, end = newInterval.second;
-        
-//         if (it != intervals.begin() && std::prev(it)->second >= start) {
-//             --it; // 找到第一个可能重叠的区间
-//         }
-
-//         // 合并重叠区间
-//         while (it != intervals.end() && it->first <= end) {
-//             start = std::min(start, it->first);
-//             end = std::max(end, it->second);
-//             it = intervals.erase(it); // 删除旧的区间
-//         }
-        
-//         // 插入合并后的区间
-//         intervals.emplace(start, end);
-//     }
-
-//     // 判断区间是否重叠
-//     bool isOverlapping(const Interval& newInterval) const {
-//         auto it = intervals.lower_bound(newInterval);
-        
-//         if (it != intervals.end() && it->first <= newInterval.second) {
-//             return true;
-//         }
-        
-//         if (it != intervals.begin() && std::prev(it)->second >= newInterval.first) {
-//             return true;
-//         }
-        
-//         return false;
-//     }
-
-// private:
-//     struct Compare {
-//         bool operator()(const Interval& a, const Interval& b) const {
-//             return a.first < b.first;
-//         }
-//     };
-
-//     std::set<Interval, Compare> intervals;
-// };
 
