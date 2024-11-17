@@ -1,12 +1,14 @@
 #pragma once
 
 #include "byte_stream.hh"
-
+#include <vector>
+#include <set>
 class Reassembler
 {
 public:
   // Construct Reassembler to write into given ByteStream.
-  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ) {}
+  explicit Reassembler( ByteStream&& output ) :  output_(std::move(output)), first_unassembled_index_(0),
+        last_byte_index_(-2), bytes_pending_num_(0),intervals_(){}
 
   /*
    * Insert a new substring to be reassembled into a ByteStream.
@@ -41,5 +43,24 @@ public:
   const Writer& writer() const { return output_.writer(); }
 
 private:
-  ByteStream output_; // the Reassembler writes to this ByteStream
+   struct Interval {
+    uint64_t start;
+    uint64_t end;
+    std::string data;
+
+    bool operator<(const Interval& other) const {
+      return start < other.start;
+    }
+  };
+
+  // 合并并写入区间的帮助函数
+  void write_and_merge(Interval new_interval);
+
+  ByteStream output_;
+  uint64_t first_unassembled_index_;
+  int last_byte_index_;
+  uint64_t bytes_pending_num_;
+  std::set<Interval> intervals_;
+
 };
+
