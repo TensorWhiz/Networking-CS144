@@ -15,7 +15,7 @@ bool Writer::is_closed() const
 void Writer::push( string data )
 {
   // Your code here.
-  if ( is_closed() || has_error() )
+  if ( is_closed() )
     return;
   const size_t len = min( data.length(), available_capacity() );
   buf_.append( data.substr( 0, len ) );
